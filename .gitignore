@@ -1,0 +1,11 @@
+runtime/
+private/
+.venv/
+**/__pycache__/
+**/.ruff_cache/
+**/.coverage
+**/.mcp.json
+*.dpapi
+*.session*
+.env*
+*.log

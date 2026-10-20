@@ -1,0 +1,8 @@
+{
+  "name": "telegram-local",
+  "version": "0.1.1",
+  "description": "Личный Telegram: выбранные чаты, сообщения и файлы по поручению, входящие по запросу.",
+  "requires_local_executor": true,
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json"
+}
