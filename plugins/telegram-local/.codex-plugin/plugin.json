@@ -1,6 +1,6 @@
 {
   "name": "telegram-local",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Telegram MCP for Codex: send messages and files and read incoming messages in explicitly allowed chats.",
   "requires_local_executor": true,
   "skills": "./skills/",

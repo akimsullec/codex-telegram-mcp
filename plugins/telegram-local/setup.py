@@ -17,7 +17,6 @@ ROOT = Path(__file__).resolve().parent
 async def login(vault):
     from telethon import TelegramClient
     from telethon.sessions import StringSession
-
     from transport import client_options
 
     with vault.locked():
