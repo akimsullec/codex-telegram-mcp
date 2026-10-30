@@ -1,5 +1,19 @@
 # Install and configure Telegram MCP for Codex on Windows
 
+## Easy installation from a Codex chat
+
+Write this in a Codex chat:
+
+> Install the plugin https://github.com/akimsullec/codex-telegram-mcp
+
+Grant the permissions needed to download and install it. Continue in the same chat: Codex will show you how to get your API ID and API hash. Once you have them, reply **“Ready”**. A separate PowerShell window will open for sign-in; enter your API credentials, phone number, login code and 2FA password there, never in the chat. After signing in, write **“Authorization completed”** in the same chat so Codex can check the setup and continue your task.
+
+The instructions follow the language you use in that chat. If Codex needs a restart, return to the same conversation afterward.
+
+## Manual installation and configuration
+
+The following steps are an alternative to installation through chat.
+
 ## 1. Install the plugin and its local runtime
 
 Requirements: Windows 10/11, Python 3.11+ with the `py` launcher, Git, and Codex CLI. Clone the public repository and run its installer:
@@ -12,7 +26,7 @@ $telegramSetup = Join-Path $telegramRepo 'plugins/telegram-local/setup.py'
 & .\install.ps1
 ```
 
-The installer creates an isolated runtime under `%LOCALAPPDATA%\Codex\TelegramLocal\runtime`, creates a personal Codex marketplace, and installs the plugin for this Windows user. It does not create or upload Telegram credentials. Restart Codex, then start a new chat.
+The installer creates an isolated runtime under `%LOCALAPPDATA%\Codex\TelegramLocal\runtime`, creates a personal Codex marketplace, and installs the plugin for this Windows user. It does not create or upload Telegram credentials. If needed, restart Codex and return to the same chat.
 
 ## 2. Get your own Telegram API credentials
 
@@ -37,17 +51,17 @@ codex plugin marketplace list
 codex plugin list
 ```
 
-In a new local chat, ask for `status`. After login, expect `configured: true`, `history_enabled: false`, and an empty allowlist. The status call does not prove live Telegram authorization. Do not register another MCP-only copy of the same server.
+In the same local chat, ask for `status`. After login, expect `configured: true`, `history_enabled: false`, and an empty allowlist. The status call does not prove live Telegram authorization. Do not register another MCP-only copy of the same server.
 
 ## 5. Update the plugin
 
 Updates are manual and accept only a published GitHub Release with both a versioned ZIP and its `.sha256` asset. Run the command below with the exact release tag you reviewed:
 
 ```powershell
-& .\update.ps1 -Version v0.2.1
+& .\update.ps1 -Version v0.2.4
 ```
 
-The script downloads the release assets, checks the archive's SHA-256 against the published checksum, verifies the tag matches the plugin manifest, installs the new version and keeps the previous plugin files as a backup. If the release or checksum is missing or mismatched, it stops without switching the installed plugin. Restart Codex after a successful update, then start a new chat. The DPAPI vault is not modified. A GitHub Actions workflow creates the ZIP and checksum when a matching `vX.Y.Z` tag is published; until the first Release with both assets exists, updates are unavailable.
+The script downloads the release assets, checks the archive's SHA-256 against the published checksum, verifies the tag matches the plugin manifest, installs the new version and keeps the previous plugin files as a backup. If the release or checksum is missing or mismatched, it stops without switching the installed plugin. Restart Codex after a successful update, then return to the same chat. The DPAPI vault is not modified. A GitHub Actions workflow creates the ZIP and checksum when a matching `vX.Y.Z` tag is published; until the first Release with both assets exists, updates are unavailable.
 
 ## 6. Choose and authorize an exact chat
 
@@ -91,7 +105,7 @@ Confirm locally by typing `ДА`. To disable it again:
 ## Troubleshooting and removal
 
 - `configured: false`: run `connect-telegram.ps1` from the source checkout under the same Windows user.
-- No tools: inspect `codex plugin list`, run `update.ps1`, then start a new chat.
+- No tools: inspect `codex plugin list`, run `update.ps1`, then return to the same chat.
 - Session revoked: repeat local login. Never provide credentials through the assistant.
 - Chat not allowed: explicitly authorize the exact contact first.
 - Telegram busy: finish the other request/login and retry later.
