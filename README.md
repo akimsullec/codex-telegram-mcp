@@ -35,7 +35,7 @@ The accompanying [agent skill](plugins/telegram-local/skills/telegram/SKILL.md) 
 
 Дайте необходимые разрешения на скачивание и локальную установку. Codex проверяет репозиторий и запускает `install.ps1`. После установки он должен вывести в **том же чате** [инструкцию «Получение API ID и API hash»](plugins/telegram-local/onboarding.md) и дождаться вашего подтверждения готовности. Та же инструкция возвращается при попытке воспользоваться плагином без авторизации.
 
-Когда API ID и API hash получены, напишите: «Готово, API ID и API hash получены, можно запускать авторизацию». Codex откроет отдельный интерактивный PowerShell для входа. Вводите реквизиты только в этом окне, не в чате. После входа сообщите о завершении в том же чате. Вывод инструкции и ожидание выполняет Codex по навыку плагина; установщик сам не может отправлять сообщения в чат. Если требуется перезапуск Codex, вернитесь в эту же беседу.
+Когда API ID и API hash получены, напишите: «Готово». Codex откроет отдельный интерактивный PowerShell для входа. Вводите реквизиты только в этом окне, не в чате. После входа сообщите о завершении в том же чате. Весь диалог показывается на языке текущего чата: Codex переводит согласованные шаблоны, включая короткие подтверждения, сохраняя ссылки и оформление. Для русского используется утверждённый текст. Вывод инструкции и ожидание выполняет Codex по навыку плагина; установщик сам не может отправлять сообщения в чат. Если требуется перезапуск Codex, вернитесь в эту же беседу.
 
 Requirements: Windows 10/11, Python 3.11 or newer with the `py` launcher, Git, Codex CLI, a personal Telegram account, and your own Telegram API credentials. Development verification used Python 3.13 on Windows. macOS/Linux storage is not implemented.
 
@@ -49,7 +49,7 @@ Set-Location codex-telegram-mcp
 
 Then run `plugins/telegram-local/connect-telegram.ps1` to sign in locally. If needed, restart Codex and return to the same chat to load the tools. Follow the complete [step-by-step installation guide](docs/INSTALL.md) or [инструкцию на русском](docs/INSTALL.ru.md).
 
-No account settings are shipped. Each installation starts without an account, allowed chats or upload directories. Credentials, session and allowlist are stored in Windows user-scoped DPAPI under `%LOCALAPPDATA%\Codex\TelegramLocal\data`; the isolated runtime is stored alongside it. The plugin source and generated personal marketplace live in the user's Codex profile, outside the project. None of these personal files is part of the public repository. Updates are manual and accept only a published GitHub Release containing the versioned ZIP and its SHA-256 checksum. Run `update.ps1 -Version v0.2.3` from the checkout after reviewing that release. Until a Release with both assets exists, the updater refuses to install anything. Release archives and checksums are created by the included GitHub Actions workflow from matching `vX.Y.Z` tags.
+No account settings are shipped. Each installation starts without an account, allowed chats or upload directories. Credentials, session and allowlist are stored in Windows user-scoped DPAPI under `%LOCALAPPDATA%\Codex\TelegramLocal\data`; the isolated runtime is stored alongside it. The plugin source and generated personal marketplace live in the user's Codex profile, outside the project. None of these personal files is part of the public repository. Updates are manual and accept only a published GitHub Release containing the versioned ZIP and its SHA-256 checksum. Run `update.ps1 -Version v0.2.4` from the checkout after reviewing that release. Until a Release with both assets exists, the updater refuses to install anything. Release archives and checksums are created by the included GitHub Actions workflow from matching `vX.Y.Z` tags.
 
 ## MCP tools
 
@@ -62,7 +62,7 @@ No account settings are shipped. Each installation starts without an account, al
 
 ## Current limits
 
-- Version 0.2.3; Windows only. This is an independent project, not an official OpenAI or Telegram product.
+- Version 0.2.4; Windows only. This is an independent project, not an official OpenAI or Telegram product.
 - No background polling, automatic replies, notifications or automatic attachment downloads.
 - Maximum outgoing file size: 100 MiB. Maximum text: 4096 UTF-16 units; captions: 1024.
 - Repeated reads can return the same messages; this is a date boundary, not an unread-message queue. No Telegram read receipts are sent.

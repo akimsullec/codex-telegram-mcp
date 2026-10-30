@@ -65,6 +65,7 @@ async def status() -> dict:
                 {
                     "onboarding_instructions": AUTH_INSTRUCTIONS,
                     "next_step": "await_user_confirmation",
+                    "display_language": "current_chat",
                 }
                 if not auth_configured(s.state)
                 else {}

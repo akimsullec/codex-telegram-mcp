@@ -1,8 +1,14 @@
-## Получение API ID и API hash
+Telegram ещё не настроен.
 
-1. Откройте [my.telegram.org](https://my.telegram.org) и войдите по номеру своего Telegram. Код подтверждения получите в Telegram.
-2. Откройте [API development tools](https://my.telegram.org/apps). Если приложение ещё не создано, заполните форму регистрации приложения.
-3. Сохраните полученные **API ID** и **API hash** для локального ввода. Официальная инструкция: [Obtaining api_id](https://core.telegram.org/api/obtaining_api_id).
-4. Вернитесь в этот чат и напишите: **«Готово, API ID и API hash получены, можно запускать авторизацию»**.
+1. Откройте [my.telegram.org](https://my.telegram.org) и авторизуйтесь на этом сайте по номеру своего Telegram.
+2. Перейдите в [API development tools](https://my.telegram.org/apps).
+3. Если приложение ещё не создано, то заполните форму.
+4. Вернитесь в этот чат и напишите **«Готово»**.
+5. Я запущу для Вас терминал >\_ PowerShell.
+6. PowerShell запросит **API ID** и **API hash**.
+7. Скопируйте **API ID** и **API hash** со страницы [API development tools](https://my.telegram.org/apps) и вставьте $\colorbox{white}{\textcolor{black}{\text{в терминал >\_ PowerShell}}}$.
 
-Не присылайте API ID, API hash, номер телефона, код входа или пароль 2FA в чат. После вашего подтверждения Codex откроет локальное окно PowerShell: вводите реквизиты только там. Пока подтверждения нет, авторизация не запускается. После завершения входа сообщите об этом в том же чате, чтобы Codex проверил status и продолжил исходную задачу.
+$\textcolor{red}{\textbf{!!! ВАЖНО !!!}}$
+
+В чат Codex нужно только написать **«Готово»**.\
+Ваши: номер телефона, пароль, API ID и API hash $\textcolor{yellow}{\text{НЕ ВСТАВЛЯЙТЕ!}}$ в этот чат.

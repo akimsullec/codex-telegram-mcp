@@ -12,10 +12,26 @@ from transport import make_client
 
 
 class OnboardingTests(unittest.IsolatedAsyncioTestCase):
+    def test_approved_dialogue_uses_short_confirmation(self):
+        self.assertIn("напишите **«Готово»**", AUTH_INSTRUCTIONS)
+        self.assertNotIn("Готово, API ID", AUTH_INSTRUCTIONS)
+        self.assertIn(r"\textcolor{red}{\textbf{!!! ВАЖНО !!!}}", AUTH_INSTRUCTIONS)
+        self.assertIn(r"\textcolor{yellow}{\text{НЕ ВСТАВЛЯЙТЕ!}}", AUTH_INSTRUCTIONS)
+
+    async def test_unconfigured_status_requests_current_chat_language(self):
+        with (
+            tempfile.TemporaryDirectory() as directory,
+            patch.object(server, "PRIVATE", Path(directory)),
+        ):
+            result = await server.status()
+        self.assertEqual(result["display_language"], "current_chat")
+
     async def test_login_rejects_captured_terminal_before_prompting(self):
-        with (patch.object(sys.stdin, "isatty", return_value=False),
-              patch("getpass.getpass") as prompt,
-              self.assertRaises(RuntimeError)):
+        with (
+            patch.object(sys.stdin, "isatty", return_value=False),
+            patch("getpass.getpass") as prompt,
+            self.assertRaises(RuntimeError),
+        ):
             await setup.login(MagicMock())
         prompt.assert_not_called()
 
