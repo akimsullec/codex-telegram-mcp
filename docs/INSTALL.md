@@ -58,7 +58,7 @@ In the same local chat, ask for `status`. After login, expect `configured: true`
 Updates are manual and accept only a published GitHub Release with both a versioned ZIP and its `.sha256` asset. Run the command below with the exact release tag you reviewed:
 
 ```powershell
-& .\update.ps1 -Version v0.2.4
+& .\update.ps1 -Version v0.2.5
 ```
 
 The script downloads the release assets, checks the archive's SHA-256 against the published checksum, verifies the tag matches the plugin manifest, installs the new version and keeps the previous plugin files as a backup. If the release or checksum is missing or mismatched, it stops without switching the installed plugin. Restart Codex after a successful update, then return to the same chat. The DPAPI vault is not modified. A GitHub Actions workflow creates the ZIP and checksum when a matching `vX.Y.Z` tag is published; until the first Release with both assets exists, updates are unavailable.

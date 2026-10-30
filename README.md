@@ -8,12 +8,16 @@ Connect Codex to Telegram on Windows: send messages and local files from your pe
 
 ## What can this Telegram integration do?
 
-- Send plain-text Telegram messages as the account owner.
-- Send a selected local file from an explicitly configured upload directory.
-- Read incoming messages only when asked, in approved private dialogs and groups.
-- Bind a contact to a stable Telegram ID and one or more aliases.
-- Keep account credentials and session data encrypted with Windows user-scoped DPAPI.
-- Expose eight local stdio MCP tools for Codex and compatible clients.
+1. Send plain-text messages, links, images and files on Telegram as the account owner.
+2. Read incoming messages in approved private dialogs and groups on request, or set up a Codex task to check them periodically.
+3. Bind a contact to a stable Telegram ID and one or more aliases.
+4. Keep account credentials and session data encrypted with Windows user-scoped DPAPI.
+5. Expose eight local stdio MCP tools for Codex and compatible clients.
+6. Analyze chat messages with Codex and extract information such as decisions, tasks, dates and contacts.
+7. Find relevant messages among those Codex is permitted to retrieve. Access to older history requires separate permission.
+8. Set up automatic replies through Codex, with explicitly authorized chats, reply rules and a schedule.
+
+Periodic checks and automatic replies require a separately configured Codex task and your explicit authorization. The plugin does not check messages or reply on its own.
 
 Example requests after choosing and authorizing the exact recipient:
 
@@ -51,7 +55,7 @@ Set-Location codex-telegram-mcp
 
 Then run `plugins/telegram-local/connect-telegram.ps1` to sign in locally. If needed, restart Codex and return to the same chat to load the tools. Follow the complete [step-by-step installation guide](docs/INSTALL.md) or [Russian setup guide](docs/INSTALL.ru.md).
 
-No account settings are shipped. Each installation starts without an account, allowed chats or upload directories. Credentials, session and allowlist are stored in Windows user-scoped DPAPI under `%LOCALAPPDATA%\Codex\TelegramLocal\data`; the isolated runtime is stored alongside it. The plugin source and generated personal marketplace live in the user's Codex profile, outside the project. None of these personal files is part of the public repository. Updates are manual and accept only a published GitHub Release containing the versioned ZIP and its SHA-256 checksum. Run `update.ps1 -Version v0.2.4` from the checkout after reviewing that release. Until a Release with both assets exists, the updater refuses to install anything. Release archives and checksums are created by the included GitHub Actions workflow from matching `vX.Y.Z` tags.
+No account settings are shipped. Each installation starts without an account, allowed chats or upload directories. Credentials, session and allowlist are stored in Windows user-scoped DPAPI under `%LOCALAPPDATA%\Codex\TelegramLocal\data`; the isolated runtime is stored alongside it. The plugin source and generated personal marketplace live in the user's Codex profile, outside the project. None of these personal files is part of the public repository. Updates are manual and accept only a published GitHub Release containing the versioned ZIP and its SHA-256 checksum. Run `update.ps1 -Version v0.2.5` from the checkout after reviewing that release. Until a Release with both assets exists, the updater refuses to install anything. Release archives and checksums are created by the included GitHub Actions workflow from matching `vX.Y.Z` tags.
 
 ## MCP tools
 
@@ -64,8 +68,8 @@ No account settings are shipped. Each installation starts without an account, al
 
 ## Current limits
 
-- Version 0.2.4; Windows only. This is an independent project, not an official OpenAI or Telegram product.
-- No background polling, automatic replies, notifications or automatic attachment downloads.
+- Version 0.2.5; Windows only. This is an independent project, not an official OpenAI or Telegram product.
+- No built-in background polling, automatic-reply worker, notifications or automatic attachment downloads. Periodic checks and reply workflows must be configured separately in Codex.
 - Maximum outgoing file size: 100 MiB. Maximum text: 4096 UTF-16 units; captions: 1024.
 - Repeated reads can return the same messages; this is a date boundary, not an unread-message queue. No Telegram read receipts are sent.
 - Private contacts, explicit usernames/links and existing basic groups by ID are supported. Discovering arbitrary private supergroups by display name is not implemented.
