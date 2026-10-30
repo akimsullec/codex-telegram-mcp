@@ -8,6 +8,7 @@ import subprocess
 import sys
 from pathlib import Path
 
+from onboarding import AUTH_INSTRUCTIONS
 from runtime_paths import runtime_dir, user_data_dir
 from vault import Vault
 
@@ -15,6 +16,10 @@ ROOT = Path(__file__).resolve().parent
 
 
 async def login(vault):
+    if not sys.stdin.isatty() or not sys.stdout.isatty():
+        raise RuntimeError(
+            "Откройте отдельный интерактивный PowerShell для входа; ввод через Codex запрещён."
+        )
     from telethon import TelegramClient
     from telethon.sessions import StringSession
     from transport import client_options
@@ -22,7 +27,14 @@ async def login(vault):
     with vault.locked():
         state = vault.load()
         print("API ID и API hash: https://my.telegram.org → API development tools")
-        api_id = int(input("API ID: ").strip())
+        raw_api_id = getpass.getpass("API ID (скрытый ввод): ").strip()
+        if (
+            not raw_api_id.isascii()
+            or not raw_api_id.isdecimal()
+            or len(raw_api_id) > 12
+        ):
+            raise ValueError("Некорректный API ID.")
+        api_id = int(raw_api_id)
         api_hash = getpass.getpass("API hash (скрытый ввод): ").strip()
         if (
             api_id <= 0
@@ -57,7 +69,9 @@ async def login(vault):
 
 def install_runtime():
     if sys.platform != "win32":
-        raise RuntimeError("Telegram Local runtime setup currently supports Windows only.")
+        raise RuntimeError(
+            "Telegram Local runtime setup currently supports Windows only."
+        )
     target = runtime_dir()
     target.parent.mkdir(parents=True, exist_ok=True)
     if not (target / "Scripts" / "python.exe").is_file():
@@ -74,7 +88,9 @@ def configure_manifest(plugin_root):
     """Use the provisioned per-user runtime directly in the installed plugin."""
     root = Path(plugin_root).resolve()
     if not (root / ".codex-plugin" / "plugin.json").is_file():
-        raise ValueError("Указанный каталог не содержит Telegram Local plugin manifest.")
+        raise ValueError(
+            "Указанный каталог не содержит Telegram Local plugin manifest."
+        )
     python = runtime_dir() / "Scripts" / "python.exe"
     if not python.is_file():
         raise RuntimeError("Сначала установите локальную среду Python.")
@@ -100,6 +116,7 @@ def main():
         "command",
         choices=[
             "install-runtime",
+            "onboarding",
             "configure-manifest",
             "login",
             "file-root",
@@ -109,6 +126,9 @@ def main():
     )
     parser.add_argument("path", nargs="?")
     args = parser.parse_args()
+    if args.command == "onboarding":
+        print(AUTH_INSTRUCTIONS)
+        return
     if args.command == "install-runtime":
         install_runtime()
         return

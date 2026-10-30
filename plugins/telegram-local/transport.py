@@ -3,6 +3,7 @@
 import hashlib
 from datetime import UTC, datetime
 
+from onboarding import AUTH_INSTRUCTIONS
 from telethon import TelegramClient, functions, types, utils
 from telethon.sessions import StringSession
 
@@ -23,7 +24,7 @@ def make_client(state):
     credentials = state.get("credentials")
     if not credentials or not state.get("session"):
         raise RuntimeError(
-            "Аккаунт не подключён. Выполните локальную настройку setup.py login."
+            AUTH_INSTRUCTIONS
         )
     return TelegramClient(
         StringSession(state["session"]),

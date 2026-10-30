@@ -81,4 +81,6 @@ if (-not $installedPlugin) {
     throw 'Telegram Local is installed but disabled. Enable it in the Codex plugin browser.'
 }
 
-Write-Output 'Plugin installed from the repository checkout. Run plugins/telegram-local/connect-telegram.ps1 to sign in, then start a new Codex chat.'
+Write-Output 'Plugin installed. Codex: display the following instructions verbatim in the SAME chat and wait for explicit readiness confirmation. Do not start login yet.'
+& $pythonLauncher.Source -3 $telegramSetup onboarding
+if ($LASTEXITCODE -ne 0) { throw 'Could not display Telegram authorization instructions.' }

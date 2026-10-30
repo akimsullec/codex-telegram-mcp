@@ -4,6 +4,7 @@ from pathlib import Path
 
 from mcp.server.fastmcp import FastMCP
 from mcp.types import ToolAnnotations
+from onboarding import AUTH_INSTRUCTIONS, auth_configured
 from runtime_paths import user_data_dir
 from vault import Vault
 
@@ -18,26 +19,28 @@ async def invoke(action, network=True):
     # MCP must register its tool catalog without importing the comparatively
     # expensive Telegram client stack. Load it only when a tool is called.
     from core import TelegramService
-    from telethon.errors import RPCError
+    from telethon.errors import RPCError, UnauthorizedError
     from transport import Transport, make_client
 
     async with gate:
         vault = Vault(PRIVATE)
         with vault.locked():
             state = vault.load()
+            if network and not auth_configured(state):
+                raise RuntimeError(AUTH_INSTRUCTIONS)
             client = make_client(state) if network else None
             try:
                 if client:
                     await client.connect()
                     if not await client.is_user_authorized():
-                        raise RuntimeError(
-                            "Сессия Telegram отозвана. Повторите локальный вход."
-                        )
+                        raise RuntimeError(AUTH_INSTRUCTIONS)
                 service = TelegramService(
                     state, vault.save, Transport(client) if client else None, PRIVATE
                 )
                 result = action(service)
                 return await result if hasattr(result, "__await__") else result
+            except UnauthorizedError:
+                raise RuntimeError(AUTH_INSTRUCTIONS) from None
             except (ValueError, PermissionError, RuntimeError):
                 raise
             except (RPCError, OSError):
@@ -57,7 +60,15 @@ async def status() -> dict:
     """Show setup status and allowed aliases, without credentials or message content."""
     return await invoke(
         lambda s: {
-            "configured": bool(s.state.get("session")),
+            "configured": auth_configured(s.state),
+            **(
+                {
+                    "onboarding_instructions": AUTH_INSTRUCTIONS,
+                    "next_step": "await_user_confirmation",
+                }
+                if not auth_configured(s.state)
+                else {}
+            ),
             "history_enabled": s.state["history_enabled"],
             "allowed_chats": s.list_allowed(),
         },
