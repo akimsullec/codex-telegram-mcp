@@ -63,7 +63,12 @@ try {
     Move-Item -LiteralPath $telegramCurrentPlugin -Destination $backupPlugin
     try {
         Move-Item -LiteralPath $stagedPlugin -Destination $telegramCurrentPlugin
+        & $telegramRuntimePython (Join-Path $telegramCurrentPlugin 'setup.py') configure-manifest $telegramCurrentPlugin
+        if ($LASTEXITCODE -ne 0) { throw 'Could not configure the installed plugin launch path.' }
     } catch {
+        if (Test-Path -LiteralPath $telegramCurrentPlugin) {
+            Move-Item -LiteralPath $telegramCurrentPlugin -Destination $stagedPlugin
+        }
         Move-Item -LiteralPath $backupPlugin -Destination $telegramCurrentPlugin
         throw
     }

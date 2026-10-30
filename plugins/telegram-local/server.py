@@ -4,11 +4,8 @@ from pathlib import Path
 
 from mcp.server.fastmcp import FastMCP
 from mcp.types import ToolAnnotations
-from telethon.errors import RPCError
 
-from core import TelegramService
 from runtime_paths import user_data_dir
-from transport import Transport, make_client
 from vault import Vault
 
 ROOT = Path(__file__).resolve().parent
@@ -19,6 +16,13 @@ logging.getLogger("telethon").setLevel(logging.CRITICAL)
 
 
 async def invoke(action, network=True):
+    # MCP must register its tool catalog without importing the comparatively
+    # expensive Telegram client stack. Load it only when a tool is called.
+    from telethon.errors import RPCError
+
+    from core import TelegramService
+    from transport import Transport, make_client
+
     async with gate:
         vault = Vault(PRIVATE)
         with vault.locked():

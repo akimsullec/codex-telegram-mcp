@@ -3,6 +3,7 @@
 import argparse
 import asyncio
 import getpass
+import json
 import subprocess
 import sys
 from pathlib import Path
@@ -70,16 +71,52 @@ def install_runtime():
     print(f"Локальная среда установлена: {target}")
 
 
+def configure_manifest(plugin_root):
+    """Use the provisioned per-user runtime directly in the installed plugin."""
+    root = Path(plugin_root).resolve()
+    if not (root / ".codex-plugin" / "plugin.json").is_file():
+        raise ValueError("Указанный каталог не содержит Telegram Local plugin manifest.")
+    python = runtime_dir() / "Scripts" / "python.exe"
+    if not python.is_file():
+        raise RuntimeError("Сначала установите локальную среду Python.")
+    manifest = {
+        "mcpServers": {
+            "telegram-local": {
+                "command": str(python),
+                # Codex can pass ${PLUGIN_ROOT} literally. Generate a per-user
+                # path after installation instead of relying on substitution.
+                "args": [str(root / "server.py")],
+                "env": {"PYTHONIOENCODING": "utf-8"},
+            }
+        }
+    }
+    (root / ".mcp.json").write_text(
+        json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+    )
+
+
 def main():
     parser = argparse.ArgumentParser(description="Локальная настройка Telegram Local")
     parser.add_argument(
         "command",
-        choices=["install-runtime", "login", "file-root", "history-on", "history-off"],
+        choices=[
+            "install-runtime",
+            "configure-manifest",
+            "login",
+            "file-root",
+            "history-on",
+            "history-off",
+        ],
     )
     parser.add_argument("path", nargs="?")
     args = parser.parse_args()
     if args.command == "install-runtime":
         install_runtime()
+        return
+    if args.command == "configure-manifest":
+        if not args.path:
+            parser.error("configure-manifest требует путь установленного плагина")
+        configure_manifest(args.path)
         return
     vault = Vault(user_data_dir())
     if args.command == "login":

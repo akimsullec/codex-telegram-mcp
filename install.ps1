@@ -6,13 +6,19 @@ $codexHome = if ($env:CODEX_HOME) { $env:CODEX_HOME } else { Join-Path $env:USER
 $telegramPlugin = Join-Path $codexHome 'plugins/telegram-local'
 $telegramMarketplaceFile = Join-Path $env:USERPROFILE '.agents/plugins/marketplace.json'
 
-foreach ($commandName in @('py', 'codex')) {
-    if (-not (Get-Command $commandName -ErrorAction SilentlyContinue)) {
-        throw "Required command not found: $commandName. Install Python 3.11+ and Codex CLI first."
-    }
-}
+$pythonCommands = @(Get-Command py -All -ErrorAction SilentlyContinue)
+$pythonLauncher = $pythonCommands |
+    Where-Object { $_.CommandType -eq 'Application' -and $_.Source -match '(?i)\\py\.exe$' -and $_.Source -notmatch '(?i)\\\.local\\bin\\' } |
+    Select-Object -First 1
+if (-not $pythonLauncher) { throw 'Windows py.exe was not found. Install Python 3.11+ and retry.' }
 
-& py -3 $telegramSetup install-runtime
+$codexCommands = @(Get-Command codex -All -ErrorAction SilentlyContinue)
+$codexCli = $codexCommands |
+    Where-Object { $_.CommandType -eq 'Application' -and $_.Source -match '(?i)\\codex\.exe$' -and $_.Source -notmatch '(?i)\\\.local\\bin\\' } |
+    Select-Object -First 1
+if (-not $codexCli) { throw 'Windows codex.exe was not found. Install Codex CLI and retry.' }
+
+& $pythonLauncher.Source -3 $telegramSetup install-runtime
 if ($LASTEXITCODE -ne 0) { throw 'Python runtime setup failed.' }
 
 if (-not (Test-Path -LiteralPath (Join-Path $telegramPlugin '.codex-plugin/plugin.json'))) {
@@ -20,6 +26,9 @@ if (-not (Test-Path -LiteralPath (Join-Path $telegramPlugin '.codex-plugin/plugi
     New-Item -ItemType Directory -Force -Path (Split-Path -Parent $telegramPlugin) | Out-Null
     Copy-Item -LiteralPath (Join-Path $telegramRepo 'plugins/telegram-local') -Destination $telegramPlugin -Recurse
 }
+
+& $pythonLauncher.Source -3 $telegramSetup configure-manifest $telegramPlugin
+if ($LASTEXITCODE -ne 0) { throw 'Could not configure the installed plugin to use its isolated Python runtime.' }
 
 $marketplaceDirectory = Split-Path -Parent $telegramMarketplaceFile
 New-Item -ItemType Directory -Force -Path $marketplaceDirectory | Out-Null
@@ -61,12 +70,12 @@ $catalogJson = $catalog | ConvertTo-Json -Depth 8
 [System.IO.File]::WriteAllText($telegramMarketplaceFile, $catalogJson, [System.Text.UTF8Encoding]::new($false))
 
 $pluginSelector = "telegram-local@$catalogName"
-$pluginStateText = & codex plugin list --marketplace $catalogName --json
+$pluginStateText = & $codexCli.Source plugin list --marketplace $catalogName --json
 if ($LASTEXITCODE -ne 0) { throw 'Could not read plugins from the personal marketplace.' }
 $pluginState = $pluginStateText | ConvertFrom-Json
 $installedPlugin = @($pluginState.installed | Where-Object pluginId -eq $pluginSelector) | Select-Object -First 1
 if (-not $installedPlugin) {
-    & codex plugin add $pluginSelector
+    & $codexCli.Source plugin add $pluginSelector
     if ($LASTEXITCODE -ne 0) { throw 'Could not install Telegram Local from the personal marketplace.' }
 } elseif (-not $installedPlugin.enabled) {
     throw 'Telegram Local is installed but disabled. Enable it in the Codex plugin browser.'
