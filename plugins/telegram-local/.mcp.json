@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "telegram-local": {
+      "command": "py",
+      "args": [
+        "-3",
+        "${PLUGIN_ROOT}/launch.py"
+      ],
+      "env": {
+        "PYTHONIOENCODING": "utf-8"
+      }
+    }
+  }
+}

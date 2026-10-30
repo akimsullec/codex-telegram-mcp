@@ -1,6 +1,5 @@
 import asyncio
 import logging
-import os
 from pathlib import Path
 
 from mcp.server.fastmcp import FastMCP
@@ -8,11 +7,12 @@ from mcp.types import ToolAnnotations
 from telethon.errors import RPCError
 
 from core import TelegramService
+from runtime_paths import user_data_dir
 from transport import Transport, make_client
 from vault import Vault
 
 ROOT = Path(__file__).resolve().parent
-PRIVATE = Path(os.environ.get("TELEGRAM_LOCAL_DATA", str(ROOT / "private"))).resolve()
+PRIVATE = user_data_dir()
 mcp = FastMCP("telegram-local")
 gate = asyncio.Lock()
 logging.getLogger("telethon").setLevel(logging.CRITICAL)

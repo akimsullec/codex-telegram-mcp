@@ -2,9 +2,9 @@
 
 Интеграция отправляет сообщения и файлы от вашего личного аккаунта Telegram и получает входящие по запросу только из явно разрешённых чатов. Бот не требуется. История по умолчанию выключена.
 
-## 1. Подготовка
+## 1. Установка плагина и локальной среды
 
-Нужны Windows 10/11, Python 3.11 или новее, Git и Codex с поддержкой локальных stdio MCP-серверов. Проверки разработки выполнялись на Windows с Python 3.13. Поддержки хранилища macOS/Linux пока нет.
+Нужны Windows 10/11, Python 3.11 или новее с лаунчером `py`, Git и Codex CLI. Поддержки хранилища macOS/Linux пока нет.
 
 Откройте PowerShell в папке, где хотите хранить исходники:
 
@@ -12,14 +12,11 @@
 git clone https://github.com/akimsullec/codex-telegram-mcp.git
 Set-Location codex-telegram-mcp
 $telegramRepo = (Get-Location).Path
-py -3 -m venv .venv
-$telegramPython = Join-Path $telegramRepo '.venv/Scripts/python.exe'
 $telegramSetup = Join-Path $telegramRepo 'plugins/telegram-local/setup.py'
-& $telegramPython -m pip install -r plugins/telegram-local/requirements.txt
-& $telegramPython $telegramSetup manifest
+& .\install.ps1
 ```
 
-Активация окружения не требуется. Сохраняйте структуру папок репозитория. Запускайте настройку из исходного репозитория, а не из копии в кэше плагинов. Пути компьютера определяются локально; готовых личных настроек в репозитории нет.
+Установщик создаёт изолированную среду в `%LOCALAPPDATA%\Codex\TelegramLocal\runtime`, создаёт личный Codex marketplace и устанавливает плагин для этого пользователя Windows. Учётные данные он не создаёт и никуда не отправляет. Перезапустите Codex и начните новый чат.
 
 ## 2. Получение API ID и API hash
 
@@ -27,41 +24,36 @@ $telegramSetup = Join-Path $telegramRepo 'plugins/telegram-local/setup.py'
 
 ## 3. Локальный вход
 
-```powershell
-& $telegramPython $telegramSetup login
-```
+Из корня репозитория запустите `& .\plugins\telegram-local\connect-telegram.ps1`. Вход выполняется в локальном терминале; не вводите реквизиты в чат Codex.
 
 В терминале последовательно введите API ID, API hash, телефон с кодом страны, код Telegram и пароль двухэтапной аутентификации, если она включена. Секретный ввод скрыт. Не отправляйте эти данные в чат с ИИ, GitHub Issues или логи.
 
 Дождитесь сообщения о сохранении сессии через Windows DPAPI. Английская строка об успешном входе и соблюдении правил — стандартное напоминание, а не сообщение о блокировке.
 
-Создаётся дополнительная сессия Telegram. Её можно отозвать через Telegram → Настройки → Устройства. Реквизиты и сессия зашифрованы для текущего пользователя Windows в `runtime/telegram-private`; эта папка исключена из Git.
+Создаётся дополнительная сессия Telegram. Её можно отозвать через Telegram → Настройки → Устройства. Реквизиты, сессия и список разрешённых чатов зашифрованы DPAPI для текущего пользователя Windows в `%LOCALAPPDATA%\Codex\TelegramLocal\data`. Не синхронизируйте и не публикуйте эту папку.
 
-## 4. Подключение к Codex
+## 4. Проверка плагина в Codex
 
-В том же окне PowerShell:
-
-```powershell
-$telegramServer = Join-Path $telegramRepo 'plugins/telegram-local/server.py'
-$telegramData = Join-Path $telegramRepo 'runtime/telegram-private'
-codex mcp add telegram-local --env "TELEGRAM_LOCAL_DATA=$telegramData" --env 'PYTHONIOENCODING=utf-8' -- $telegramPython $telegramServer
-codex mcp list
-```
-
-Обновите или перезапустите клиент, если этого требует ваша версия. Проверьте появление восьми инструментов. Запросите `status`: после входа ожидаются `configured: true`, `history_enabled: false`, пустой список чатов. Локальный статус не проверяет действительность сессии по сети.
-
-Установите также навык поведения ассистента в текущий проект:
+Установщик регистрирует личный marketplace и устанавливает плагин. Проверьте регистрацию:
 
 ```powershell
-New-Item -ItemType Directory -Force .agents/skills | Out-Null
-Copy-Item -Recurse plugins/telegram-local/skills/telegram .agents/skills/telegram-local
+codex plugin marketplace list
+codex plugin list
 ```
 
-Работайте с Codex в этой папке, чтобы он обнаружил навык. Для других проектов установите этот же навык в соответствующую папку проекта или личных навыков. Он описывает подтверждение неоднозначных получателей, явное разрешение чатов и обработку входящих как недоверенных данных.
+В новом локальном чате запросите `status`. После входа ожидаются `configured: true`, `history_enabled: false` и пустой список разрешённых чатов. Этот статус сам по себе не проверяет действительность сессии по сети. Не регистрируйте вторую MCP-копию того же сервера.
 
-В пакете также есть совместимый старый манифест `.codex-plugin` и каталог локального маркетплейса. Его поддержка зависит от версии клиента; перед использованием нужно сгенерировать `.mcp.json`. Основной способ установки в этой инструкции — прямое подключение MCP. Не подключайте одновременно две копии одного сервера без необходимости.
+## 5. Обновление
 
-## 5. Разрешение чата
+Обновление запускается вручную и принимает только опубликованный GitHub Release с версионированным ZIP и файлом `.sha256`. Укажите точный просмотренный тег релиза:
+
+```powershell
+& .\update.ps1 -Version v0.2.1
+```
+
+Скрипт скачает оба файла, сверит SHA-256 архива с опубликованной контрольной суммой, проверит совпадение тега и версии манифеста и установит новую версию, сохранив предыдущие файлы для отката. Если релиз или checksum отсутствует либо сумма не совпала, текущая версия останется активной. После успешного обновления перезапустите Codex и начните новый чат. Хранилище DPAPI не меняется. GitHub Actions создаёт архив и checksum после публикации тега `vX.Y.Z`; до первого Release с обоими файлами обновлений нет.
+
+## 6. Разрешение чата
 
 Пример: «Найди @имя_контакта. Разрешаю отправлять и получать сообщения в этом конкретном чате под именем Алекс».
 
@@ -69,37 +61,41 @@ Copy-Item -Recurse plugins/telegram-local/skills/telegram .agents/skills/telegra
 
 Для проверки явно попросите отправить короткое сообщение выбранному адресату. `accepted_by_telegram: true` подтверждает принятие Telegram, но не прочтение человеком.
 
-## 6. Отправка файлов
+## 7. Отправка файлов
 
 Сначала локально разрешите узкую папку с исходящими файлами:
 
 ```powershell
+$telegramRuntimePython = Join-Path $env:LOCALAPPDATA 'Codex/TelegramLocal/runtime/Scripts/python.exe'
+$telegramSetup = Join-Path $telegramRepo 'plugins/telegram-local/setup.py'
 $telegramUploadFolder = Read-Host 'Папка с файлами, которую разрешаете для отправки'
-& $telegramPython $telegramSetup file-root $telegramUploadFolder
+& $telegramRuntimePython $telegramSetup file-root $telegramUploadFolder
 ```
 
 Затем укажите ассистенту конкретный файл и получателя. Во время вызова нужен абсолютный путь; персональных путей в публичном пакете нет. Максимум — 100 МиБ. Файлы сессии из приватного хранилища отправлять нельзя. Переданный файл уходит в Telegram.
 
-## 7. Входящие и старая история
+## 8. Входящие и старая история
 
 «Проверь новые сообщения от Алекса» — разовое чтение по запросу. Фонового опроса, автоматических ответов и скачивания вложений нет. Новыми считаются сообщения с первой полной секунды после разрешения чата; повторное чтение может вернуть те же сообщения. Отметка прочтения не отправляется.
 
 Старая история выключена. Включить её может владелец локально:
 
 ```powershell
-& $telegramPython $telegramSetup history-on
+$telegramRuntimePython = Join-Path $env:LOCALAPPDATA 'Codex/TelegramLocal/runtime/Scripts/python.exe'
+$telegramSetup = Join-Path $telegramRepo 'plugins/telegram-local/setup.py'
+& $telegramRuntimePython $telegramSetup history-on
 ```
 
 Введите `ДА` для подтверждения. Выключение:
 
 ```powershell
-& $telegramPython $telegramSetup history-off
+& $telegramRuntimePython $telegramSetup history-off
 ```
 
 ## 8. Ошибки и отключение
 
-- Не настроен аккаунт: выполните login из исходников и проверьте совпадение папки данных у настройки и MCP.
-- Нет инструментов: проверьте `codex mcp list`, путь интерпретатора и сервера, обновите клиент.
+- Не настроен аккаунт: запустите `connect-telegram.ps1` из исходного клона под тем же пользователем Windows.
+- Нет инструментов: проверьте `codex plugin list`, запустите `update.ps1` и начните новый чат.
 - Сессия отозвана: войдите заново локально.
 - Чат не разрешён: явно разрешите точного получателя.
 - Telegram занят: дождитесь завершения другого запроса или входа.
@@ -107,7 +103,7 @@ $telegramUploadFolder = Read-Host 'Папка с файлами, которую 
 - Файл отклонён: проверьте разрешённую папку, размер и путь.
 - Ошибка DPAPI после смены компьютера или пользователя Windows: выполните новый вход. Зашифрованная сессия не переносима как обычный файл авторизации.
 
-Удаление регистрации: `codex mcp remove telegram-local`. Удалите установленный навык отдельно и отзовите сессию в Telegram → Настройки → Устройства. Удаление регистрации MCP само по себе сессию не отзывает.
+Удаление плагина: `codex plugin remove telegram-local@telegram-local-personal`. Если у вашего личного marketplace другое имя, используйте селектор из `codex plugin list`. Если больше не хотите видеть плагин в списке, удалите только запись Telegram Local из `%USERPROFILE%\.agents\plugins\marketplace.json`. Отозвать сессию можно в Telegram → Настройки → Устройства. Удаление плагина не удаляет и не отзывает хранилище DPAPI.
 
 Входящие тексты по вашему запросу передаются MCP-клиенту и могут обрабатываться его поставщиком ИИ. Локальное хранение ключей не означает полностью автономную обработку переписки.
 

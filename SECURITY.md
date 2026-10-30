@@ -20,6 +20,6 @@ Each send uses a UUID request ID. The server records an uncertain state before n
 
 ## Publishing and reporting
 
-Never commit `.mcp.json`, runtime data, `.env` files, API hashes, sessions, phone numbers, contact lists, personal aliases, chat IDs, message bodies or personal machine paths. This repository includes only source, synthetic tests, public metadata and documentation.
+Never commit generated machine-specific configuration, runtime data, `.env` files, API hashes, sessions, phone numbers, contact lists, personal aliases, chat IDs, message bodies or personal machine paths. The committed `plugins/telegram-local/.mcp.json` is a portable launcher configuration only; it contains no credentials or user-specific paths. This repository includes only source, synthetic tests, public metadata and documentation.
 
 Report vulnerabilities with a minimal synthetic reproduction. Do not publish secrets or private chat data in an issue. For sensitive reports use GitHub's private vulnerability reporting if available; otherwise first open a content-free request for a private reporting channel. Revoke a leaked session immediately in Telegram Settings > Devices.

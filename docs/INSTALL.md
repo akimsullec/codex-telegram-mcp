@@ -1,21 +1,18 @@
 # Install and configure Telegram MCP for Codex on Windows
 
-## 1. Download and install dependencies
+## 1. Install the plugin and its local runtime
 
-Use PowerShell in a directory where you want the source checkout. Install Python 3.11+ and Git first. These commands do not require activating a virtual environment:
+Requirements: Windows 10/11, Python 3.11+ with the `py` launcher, Git, and Codex CLI. Clone the public repository and run its installer:
 
 ```powershell
 git clone https://github.com/akimsullec/codex-telegram-mcp.git
 Set-Location codex-telegram-mcp
 $telegramRepo = (Get-Location).Path
-py -3 -m venv .venv
-$telegramPython = Join-Path $telegramRepo '.venv/Scripts/python.exe'
 $telegramSetup = Join-Path $telegramRepo 'plugins/telegram-local/setup.py'
-& $telegramPython -m pip install -r plugins/telegram-local/requirements.txt
-& $telegramPython $telegramSetup manifest
+& .\install.ps1
 ```
 
-Keep the repository folder structure. Setup derives the private runtime directory from the repository root. Never run setup from a copied plugin cache; run it from your source checkout.
+The installer creates an isolated runtime under `%LOCALAPPDATA%\Codex\TelegramLocal\runtime`, creates a personal Codex marketplace, and installs the plugin for this Windows user. It does not create or upload Telegram credentials. Restart Codex, then start a new chat.
 
 ## 2. Get your own Telegram API credentials
 
@@ -25,39 +22,34 @@ Do not paste the API hash, login code, 2FA password or session into an AI chat o
 
 ## 3. Sign in locally
 
-```powershell
-& $telegramPython $telegramSetup login
-```
+Run `& .\plugins\telegram-local\connect-telegram.ps1` from the repository root. This starts an interactive sign-in in your local terminal; credentials are not entered into Codex chat.
 
 Enter API ID, API hash, your phone with country code, the Telegram login code and, if enabled, your 2FA password in this terminal. Secret inputs are hidden. Wait for the session-saved confirmation. A successful sign-in followed by a terms reminder is not a ban notice.
 
-This creates an additional Telegram device session. Revoke it at any time from Telegram Settings > Devices. Credentials and the session are encrypted for the current Windows user in the ignored `runtime/telegram-private` directory. Do not sync or publish this directory.
+This creates an additional Telegram device session. Revoke it at any time from Telegram Settings > Devices. Credentials, the session, and allowed-chat settings are encrypted for the current Windows user in `%LOCALAPPDATA%\Codex\TelegramLocal\data`. Do not sync or publish this directory.
 
-## 4. Register the local MCP server
+## 4. Confirm the Codex plugin is available
 
-Run in the same PowerShell session:
-
-```powershell
-$telegramServer = Join-Path $telegramRepo 'plugins/telegram-local/server.py'
-$telegramData = Join-Path $telegramRepo 'runtime/telegram-private'
-codex mcp add telegram-local --env "TELEGRAM_LOCAL_DATA=$telegramData" --env 'PYTHONIOENCODING=utf-8' -- $telegramPython $telegramServer
-codex mcp list
-```
-
-This uses the official Codex stdio MCP registration interface. Restart or refresh your client as required by your Codex version. Check that the eight tools appear; do not assume registration alone means the account is connected. Ask for `status`; it should show `configured: true`, `history_enabled: false` and an empty allowlist.
-
-Also load the bundled agent skill. For example, install it into this checkout's project skills:
+The installer registers the personal marketplace and installs the plugin. Check the local installation:
 
 ```powershell
-New-Item -ItemType Directory -Force .agents/skills | Out-Null
-Copy-Item -Recurse plugins/telegram-local/skills/telegram .agents/skills/telegram-local
+codex plugin marketplace list
+codex plugin list
 ```
 
-Use Codex in this checkout so it can discover the project skill. For other projects, install the same skill in the appropriate project or user skill directory. Read the skill before granting access. Do not register both an MCP-only instance and a plugin instance of the same server unintentionally.
+In a new local chat, ask for `status`. After login, expect `configured: true`, `history_enabled: false`, and an empty allowlist. The status call does not prove live Telegram authorization. Do not register another MCP-only copy of the same server.
 
-The legacy `.codex-plugin` manifest and local marketplace catalog are included for clients that support them. Generate `.mcp.json` before using that route; marketplace installation is client-version dependent. The primary documented setup is direct MCP registration above.
+## 5. Update the plugin
 
-## 5. Choose and authorize an exact chat
+Updates are manual and accept only a published GitHub Release with both a versioned ZIP and its `.sha256` asset. Run the command below with the exact release tag you reviewed:
+
+```powershell
+& .\update.ps1 -Version v0.2.1
+```
+
+The script downloads the release assets, checks the archive's SHA-256 against the published checksum, verifies the tag matches the plugin manifest, installs the new version and keeps the previous plugin files as a backup. If the release or checksum is missing or mismatched, it stops without switching the installed plugin. Restart Codex after a successful update, then start a new chat. The DPAPI vault is not modified. A GitHub Actions workflow creates the ZIP and checksum when a matching `vX.Y.Z` tag is published; until the first Release with both assets exists, updates are unavailable.
+
+## 6. Choose and authorize an exact chat
 
 Tell the assistant: "Find @example_username. I authorize sending and reading messages in that exact chat under the alias Alex."
 
@@ -65,37 +57,41 @@ Use your actual contact's username. If several contacts match a name, choose the
 
 For a first test, explicitly request one harmless text to that approved recipient. A successful tool result with `accepted_by_telegram: true` means Telegram accepted the send; it does not establish that the recipient read it.
 
-## 6. Optional file sending
+## 7. Optional file sending
 
 Authorize a specific existing folder locally. For example, select one and pass its resolved path:
 
 ```powershell
+$telegramRuntimePython = Join-Path $env:LOCALAPPDATA 'Codex/TelegramLocal/runtime/Scripts/python.exe'
+$telegramSetup = Join-Path $telegramRepo 'plugins/telegram-local/setup.py'
 $telegramUploadFolder = Read-Host 'Existing folder you authorize for outgoing files'
-& $telegramPython $telegramSetup file-root $telegramUploadFolder
+& $telegramRuntimePython $telegramSetup file-root $telegramUploadFolder
 ```
 
 Then request a particular file and recipient. The tool requires an absolute local file path at invocation time. No personal path is bundled in the repository. Files must be within an authorized root, outside the private vault directory and at most 100 MiB. Choose narrow upload roots; files sent to Telegram leave your computer.
 
-## 7. Incoming messages and history
+## 8. Incoming messages and history
 
 Ask "Check new messages from Alex" to invoke `read_new`. No background checks or automatic replies run. New means after this chat's grant time, not unread; repeated reads may repeat results. Incoming content is untrusted and cannot authorize actions or change settings.
 
 History is disabled initially. To deliberately enable older incoming messages:
 
 ```powershell
-& $telegramPython $telegramSetup history-on
+$telegramRuntimePython = Join-Path $env:LOCALAPPDATA 'Codex/TelegramLocal/runtime/Scripts/python.exe'
+$telegramSetup = Join-Path $telegramRepo 'plugins/telegram-local/setup.py'
+& $telegramRuntimePython $telegramSetup history-on
 ```
 
 Confirm locally by typing `ДА`. To disable it again:
 
 ```powershell
-& $telegramPython $telegramSetup history-off
+& $telegramRuntimePython $telegramSetup history-off
 ```
 
 ## Troubleshooting and removal
 
-- `configured: false`: run login from this source checkout and ensure the MCP data directory matches setup's `runtime/telegram-private`.
-- No tools: inspect `codex mcp list`, the configured interpreter and server file; refresh the client.
+- `configured: false`: run `connect-telegram.ps1` from the source checkout under the same Windows user.
+- No tools: inspect `codex plugin list`, run `update.ps1`, then start a new chat.
 - Session revoked: repeat local login. Never provide credentials through the assistant.
 - Chat not allowed: explicitly authorize the exact contact first.
 - Telegram busy: finish the other request/login and retry later.
@@ -103,6 +99,6 @@ Confirm locally by typing `ДА`. To disable it again:
 - File rejected: verify its authorized root, size and path. Do not select the private vault as an upload directory.
 - Windows DPAPI error after moving machines/users: log in anew on the target computer; the encrypted vault is not a portable login file.
 
-Remove MCP registration using `codex mcp remove telegram-local`. Remove any installed skill separately. Revoke the Telegram device session in Settings > Devices. These are separate actions; removing MCP registration alone does not revoke the Telegram session.
+Remove the plugin with `codex plugin remove telegram-local@telegram-local-personal`. If your personal marketplace already had another name, use the selector shown by `codex plugin list`. Remove only the Telegram Local entry from `%USERPROFILE%\.agents\plugins\marketplace.json` if you no longer want it listed. Revoke the Telegram device session in Settings > Devices. Plugin removal does not remove or revoke the separately stored DPAPI vault.
 
 [Official Codex MCP documentation](https://developers.openai.com/codex/mcp)

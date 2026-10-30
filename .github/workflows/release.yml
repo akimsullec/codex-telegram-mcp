@@ -1,0 +1,28 @@
+name: Publish verified release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Package and publish checksum
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version="${GITHUB_REF_NAME}"
+          manifest_version="$(python3 -c 'import json; print(json.load(open("plugins/telegram-local/.codex-plugin/plugin.json"))["version"])')"
+          test "v${manifest_version}" = "${version}"
+          archive="codex-telegram-mcp-${version}.zip"
+          git archive --format=zip --prefix="codex-telegram-mcp-${version}/" "${GITHUB_SHA}" > "${archive}"
+          sha256sum "${archive}" > "${archive}.sha256"
+          gh release create "${version}" "${archive}" "${archive}.sha256" --title "Telegram Local ${version}" --generate-notes

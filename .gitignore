@@ -5,6 +5,7 @@ private/
 **/.ruff_cache/
 **/.coverage
 **/.mcp.json
+!plugins/telegram-local/.mcp.json
 *.dpapi
 *.session*
 .env*

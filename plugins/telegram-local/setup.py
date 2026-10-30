@@ -3,10 +3,11 @@
 import argparse
 import asyncio
 import getpass
-import json
+import subprocess
 import sys
 from pathlib import Path
 
+from runtime_paths import runtime_dir, user_data_dir
 from vault import Vault
 
 ROOT = Path(__file__).resolve().parent
@@ -54,32 +55,35 @@ async def login(vault):
             await client.disconnect()
 
 
+def install_runtime():
+    if sys.platform != "win32":
+        raise RuntimeError("Telegram Local runtime setup currently supports Windows only.")
+    target = runtime_dir()
+    target.parent.mkdir(parents=True, exist_ok=True)
+    if not (target / "Scripts" / "python.exe").is_file():
+        subprocess.run([sys.executable, "-m", "venv", str(target)], check=True)
+    python = target / "Scripts" / "python.exe"
+    subprocess.run(
+        [str(python), "-m", "pip", "install", "-r", str(ROOT / "requirements.txt")],
+        check=True,
+    )
+    print(f"Локальная среда установлена: {target}")
+
+
 def main():
     parser = argparse.ArgumentParser(description="Локальная настройка Telegram Local")
     parser.add_argument(
         "command",
-        choices=["login", "file-root", "history-on", "history-off", "manifest"],
+        choices=["install-runtime", "login", "file-root", "history-on", "history-off"],
     )
     parser.add_argument("path", nargs="?")
     args = parser.parse_args()
-    vault = Vault(ROOT.parents[1] / "runtime" / "telegram-private")
+    if args.command == "install-runtime":
+        install_runtime()
+        return
+    vault = Vault(user_data_dir())
     if args.command == "login":
         asyncio.run(login(vault))
-    elif args.command == "manifest":
-        config = {
-            "mcpServers": {
-                "telegram-local": {
-                    "command": sys.executable,
-                    "args": ["${PLUGIN_ROOT}/server.py"],
-                    "env": {
-                        "TELEGRAM_LOCAL_DATA": str(vault.directory),
-                        "PYTHONIOENCODING": "utf-8",
-                    },
-                }
-            }
-        }
-        (ROOT / ".mcp.json").write_text(json.dumps(config, indent=2), encoding="utf-8")
-        print("Локальный MCP-манифест создан для текущего интерпретатора Python.")
     else:
         with vault.locked():
             state = vault.load()
